@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Sun, Moon, History, X, Percent, Divide, Minus, Plus, Equal } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,41 @@ export default function Calculator() {
   const [lastPressed, setLastPressed] = useState<string | null>(null)
   const [waitingForOperand, setWaitingForOperand] = useState(true)
   const [memory, setMemory] = useState<number>(0)
+
+  // Load history from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem("calculatorHistory")
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory))
+      }
+
+      const savedMemory = localStorage.getItem("calculatorMemory")
+      if (savedMemory) {
+        setMemory(Number.parseFloat(savedMemory))
+      }
+    } catch (error) {
+      console.error("Error loading data from localStorage:", error)
+    }
+  }, [])
+
+  // Save history to localStorage whenever it changes
+  const saveHistoryToLocalStorage = useCallback((newHistory: string[]) => {
+    try {
+      localStorage.setItem("calculatorHistory", JSON.stringify(newHistory))
+    } catch (error) {
+      console.error("Error saving history to localStorage:", error)
+    }
+  }, [])
+
+  // Save memory to localStorage whenever it changes
+  const saveMemoryToLocalStorage = useCallback((newMemory: number) => {
+    try {
+      localStorage.setItem("calculatorMemory", newMemory.toString())
+    } catch (error) {
+      console.error("Error saving memory to localStorage:", error)
+    }
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -117,7 +152,9 @@ export default function Calculator() {
       setDisplayValue(newValue.toString())
 
       // Add to history
-      setHistory((prev) => [...prev, `${currentValue} ${operation} ${inputValue} = ${newValue}`])
+      const newHistory = [...history, `${currentValue} ${operation} ${inputValue} = ${newValue}`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
     }
 
     setWaitingForOperand(true)
@@ -133,7 +170,9 @@ export default function Calculator() {
       const newValue = performCalculation(currentValue, inputValue, operation)
 
       // Add to history
-      setHistory((prev) => [...prev, `${currentValue} ${operation} ${inputValue} = ${newValue}`])
+      const newHistory = [...history, `${currentValue} ${operation} ${inputValue} = ${newValue}`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
 
       setDisplayValue(newValue.toString())
       setStoredValue(null)
@@ -169,7 +208,9 @@ export default function Calculator() {
     setLastPressed("√")
 
     // Add to history
-    setHistory((prev) => [...prev, `√(${value}) = ${result}`])
+    const newHistory = [...history, `√(${value}) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateSquare = () => {
@@ -179,7 +220,9 @@ export default function Calculator() {
     setLastPressed("x²")
 
     // Add to history
-    setHistory((prev) => [...prev, `${value}² = ${result}`])
+    const newHistory = [...history, `${value}² = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateReciprocal = () => {
@@ -189,7 +232,9 @@ export default function Calculator() {
     setLastPressed("1/x")
 
     // Add to history
-    setHistory((prev) => [...prev, `1/${value} = ${result}`])
+    const newHistory = [...history, `1/${value} = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateSin = () => {
@@ -199,7 +244,9 @@ export default function Calculator() {
     setLastPressed("sin")
 
     // Add to history
-    setHistory((prev) => [...prev, `sin(${value}°) = ${result}`])
+    const newHistory = [...history, `sin(${value}°) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateCos = () => {
@@ -209,7 +256,9 @@ export default function Calculator() {
     setLastPressed("cos")
 
     // Add to history
-    setHistory((prev) => [...prev, `cos(${value}°) = ${result}`])
+    const newHistory = [...history, `cos(${value}°) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateTan = () => {
@@ -219,7 +268,9 @@ export default function Calculator() {
     setLastPressed("tan")
 
     // Add to history
-    setHistory((prev) => [...prev, `tan(${value}°) = ${result}`])
+    const newHistory = [...history, `tan(${value}°) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateLog = () => {
@@ -229,7 +280,9 @@ export default function Calculator() {
     setLastPressed("log")
 
     // Add to history
-    setHistory((prev) => [...prev, `log(${value}) = ${result}`])
+    const newHistory = [...history, `log(${value}) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const calculateLn = () => {
@@ -239,17 +292,23 @@ export default function Calculator() {
     setLastPressed("ln")
 
     // Add to history
-    setHistory((prev) => [...prev, `ln(${value}) = ${result}`])
+    const newHistory = [...history, `ln(${value}) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
   }
 
   const memoryAdd = () => {
-    setMemory(memory + Number.parseFloat(displayValue))
+    const newMemory = memory + Number.parseFloat(displayValue)
+    setMemory(newMemory)
+    saveMemoryToLocalStorage(newMemory)
     setWaitingForOperand(true)
     setLastPressed("M+")
   }
 
   const memorySubtract = () => {
-    setMemory(memory - Number.parseFloat(displayValue))
+    const newMemory = memory - Number.parseFloat(displayValue)
+    setMemory(newMemory)
+    saveMemoryToLocalStorage(newMemory)
     setWaitingForOperand(true)
     setLastPressed("M-")
   }
@@ -262,11 +321,13 @@ export default function Calculator() {
 
   const memoryClear = () => {
     setMemory(0)
+    saveMemoryToLocalStorage(0)
     setLastPressed("MC")
   }
 
   const clearHistory = () => {
     setHistory([])
+    saveHistoryToLocalStorage([])
   }
 
   return (
