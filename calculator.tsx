@@ -18,17 +18,25 @@ export default function Calculator() {
   const [waitingForOperand, setWaitingForOperand] = useState(true)
   const [memory, setMemory] = useState<number>(0)
 
-  // Load history from localStorage on component mount
+  // Load saved data from localStorage on component mount
   useEffect(() => {
     try {
+      // Load history
       const savedHistory = localStorage.getItem("calculatorHistory")
       if (savedHistory) {
         setHistory(JSON.parse(savedHistory))
       }
 
+      // Load memory
       const savedMemory = localStorage.getItem("calculatorMemory")
       if (savedMemory) {
         setMemory(Number.parseFloat(savedMemory))
+      }
+
+      // Load theme preference
+      const savedTheme = localStorage.getItem("calculatorDarkMode")
+      if (savedTheme !== null) {
+        setIsDarkMode(savedTheme === "true")
       }
     } catch (error) {
       console.error("Error loading data from localStorage:", error)
@@ -50,6 +58,15 @@ export default function Calculator() {
       localStorage.setItem("calculatorMemory", newMemory.toString())
     } catch (error) {
       console.error("Error saving memory to localStorage:", error)
+    }
+  }, [])
+
+  // Save theme preference to localStorage
+  const saveThemeToLocalStorage = useCallback((darkMode: boolean) => {
+    try {
+      localStorage.setItem("calculatorDarkMode", darkMode.toString())
+    } catch (error) {
+      console.error("Error saving theme to localStorage:", error)
     }
   }, [])
 
@@ -86,7 +103,9 @@ export default function Calculator() {
   }, [lastPressed])
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode)
+    const newDarkMode = !isDarkMode
+    setIsDarkMode(newDarkMode)
+    saveThemeToLocalStorage(newDarkMode)
   }
 
   const clearAll = () => {
@@ -199,6 +218,47 @@ export default function Calculator() {
       default:
         return secondOperand
     }
+  }
+
+  // Calculate factorial
+  const calculateFactorial = () => {
+    const value = Number.parseFloat(displayValue)
+
+    // Check if the value is a non-negative integer
+    if (value < 0 || !Number.isInteger(value)) {
+      const newHistory = [...history, `${value}! = Error: Factorial requires a non-negative integer`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
+      setDisplayValue("Error")
+      setLastPressed("!")
+      setWaitingForOperand(true)
+      return
+    }
+
+    // Calculate factorial (with limit to avoid overflow)
+    if (value > 170) {
+      const newHistory = [...history, `${value}! = Infinity (too large)`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
+      setDisplayValue("Infinity")
+      setLastPressed("!")
+      setWaitingForOperand(true)
+      return
+    }
+
+    let result = 1
+    for (let i = 2; i <= value; i++) {
+      result *= i
+    }
+
+    setDisplayValue(result.toString())
+    setLastPressed("!")
+
+    // Add to history
+    const newHistory = [...history, `${value}! = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+    setWaitingForOperand(true)
   }
 
   const calculateSquareRoot = () => {
@@ -445,7 +505,7 @@ export default function Calculator() {
             <CalcButton onClick={calculateLog} label="log" type="function" lastPressed={lastPressed} />
             <CalcButton onClick={calculateLn} label="ln" type="function" lastPressed={lastPressed} />
             <CalcButton onClick={calculateSquareRoot} label="√" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={calculateSquare} label="x²" type="function" lastPressed={lastPressed} />
+            <CalcButton onClick={calculateFactorial} label="x!" type="function" lastPressed={lastPressed} />
 
             {/* First Row */}
             <CalcButton onClick={clearAll} label="C" type="function" lastPressed={lastPressed} />
@@ -502,7 +562,7 @@ export default function Calculator() {
             />
 
             {/* Fifth Row */}
-            <CalcButton onClick={calculateReciprocal} label="1/x" type="function" lastPressed={lastPressed} />
+            <CalcButton onClick={calculateSquare} label="x²" type="function" lastPressed={lastPressed} />
             <CalcButton onClick={() => inputDigit(0)} label="0" type="digit" lastPressed={lastPressed} />
             <CalcButton onClick={inputDot} label="." type="digit" lastPressed={lastPressed} />
             <CalcButton
