@@ -4,7 +4,21 @@ import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sun, Moon, History, X, Percent, Divide, Minus, Plus, Equal } from "lucide-react"
+import {
+  Sun,
+  Moon,
+  History,
+  X,
+  Percent,
+  Divide,
+  Minus,
+  Plus,
+  Equal,
+  ArrowLeft,
+  Sigma,
+  ActivityIcon as Function,
+  CalculatorIcon,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function Calculator() {
@@ -17,6 +31,9 @@ export default function Calculator() {
   const [lastPressed, setLastPressed] = useState<string | null>(null)
   const [waitingForOperand, setWaitingForOperand] = useState(true)
   const [memory, setMemory] = useState<number>(0)
+  const [activeKeypad, setActiveKeypad] = useState<"main" | "advanced">("main")
+  const [integrationMode, setIntegrationMode] = useState(false)
+  const [derivativeMode, setDerivativeMode] = useState(false)
 
   // Load saved data from localStorage on component mount
   useEffect(() => {
@@ -84,6 +101,9 @@ export default function Calculator() {
         clearAll()
       } else if (e.key === "Backspace") {
         clearLastChar()
+      } else if (e.key === "Tab") {
+        e.preventDefault()
+        toggleKeypad()
       }
     }
 
@@ -91,7 +111,7 @@ export default function Calculator() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [displayValue, storedValue, operation, waitingForOperand])
+  }, [displayValue, storedValue, operation, waitingForOperand, activeKeypad])
 
   useEffect(() => {
     if (lastPressed) {
@@ -101,6 +121,12 @@ export default function Calculator() {
       return () => clearTimeout(timer)
     }
   }, [lastPressed])
+
+  const toggleKeypad = () => {
+    setActiveKeypad(activeKeypad === "main" ? "advanced" : "main")
+    setIntegrationMode(false)
+    setDerivativeMode(false)
+  }
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode
@@ -114,6 +140,8 @@ export default function Calculator() {
     setOperation(null)
     setWaitingForOperand(true)
     setLastPressed("C")
+    setIntegrationMode(false)
+    setDerivativeMode(false)
   }
 
   const clearLastChar = () => {
@@ -215,6 +243,8 @@ export default function Calculator() {
         return Math.pow(firstOperand, secondOperand)
       case "log":
         return Math.log(secondOperand) / Math.log(firstOperand)
+      case "mod":
+        return firstOperand % secondOperand
       default:
         return secondOperand
     }
@@ -285,6 +315,30 @@ export default function Calculator() {
     saveHistoryToLocalStorage(newHistory)
   }
 
+  const calculateCube = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = value * value * value
+    setDisplayValue(result.toString())
+    setLastPressed("x³")
+
+    // Add to history
+    const newHistory = [...history, `${value}³ = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateCubeRoot = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.cbrt(value)
+    setDisplayValue(result.toString())
+    setLastPressed("∛")
+
+    // Add to history
+    const newHistory = [...history, `∛(${value}) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
   const calculateReciprocal = () => {
     const value = Number.parseFloat(displayValue)
     const result = 1 / value
@@ -333,6 +387,62 @@ export default function Calculator() {
     saveHistoryToLocalStorage(newHistory)
   }
 
+  const calculateAsin = () => {
+    const value = Number.parseFloat(displayValue)
+    if (value < -1 || value > 1) {
+      const newHistory = [...history, `asin(${value}) = Error: Domain error`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
+      setDisplayValue("Error")
+      setLastPressed("asin")
+      setWaitingForOperand(true)
+      return
+    }
+
+    const result = Math.asin(value) * (180 / Math.PI) // Convert to degrees
+    setDisplayValue(result.toString())
+    setLastPressed("asin")
+
+    // Add to history
+    const newHistory = [...history, `asin(${value}) = ${result}°`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateAcos = () => {
+    const value = Number.parseFloat(displayValue)
+    if (value < -1 || value > 1) {
+      const newHistory = [...history, `acos(${value}) = Error: Domain error`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
+      setDisplayValue("Error")
+      setLastPressed("acos")
+      setWaitingForOperand(true)
+      return
+    }
+
+    const result = Math.acos(value) * (180 / Math.PI) // Convert to degrees
+    setDisplayValue(result.toString())
+    setLastPressed("acos")
+
+    // Add to history
+    const newHistory = [...history, `acos(${value}) = ${result}°`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateAtan = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.atan(value) * (180 / Math.PI) // Convert to degrees
+    setDisplayValue(result.toString())
+    setLastPressed("atan")
+
+    // Add to history
+    const newHistory = [...history, `atan(${value}) = ${result}°`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
   const calculateLog = () => {
     const value = Number.parseFloat(displayValue)
     const result = Math.log10(value)
@@ -355,6 +465,153 @@ export default function Calculator() {
     const newHistory = [...history, `ln(${value}) = ${result}`]
     setHistory(newHistory)
     saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateExp = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.exp(value)
+    setDisplayValue(result.toString())
+    setLastPressed("e^x")
+
+    // Add to history
+    const newHistory = [...history, `e^${value} = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculatePi = () => {
+    setDisplayValue(Math.PI.toString())
+    setLastPressed("π")
+    setWaitingForOperand(true)
+  }
+
+  const calculateE = () => {
+    setDisplayValue(Math.E.toString())
+    setLastPressed("e")
+    setWaitingForOperand(true)
+  }
+
+  const calculateAbs = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.abs(value)
+    setDisplayValue(result.toString())
+    setLastPressed("|x|")
+
+    // Add to history
+    const newHistory = [...history, `|${value}| = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateFloor = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.floor(value)
+    setDisplayValue(result.toString())
+    setLastPressed("⌊x⌋")
+
+    // Add to history
+    const newHistory = [...history, `⌊${value}⌋ = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateCeil = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.ceil(value)
+    setDisplayValue(result.toString())
+    setLastPressed("⌈x⌉")
+
+    // Add to history
+    const newHistory = [...history, `⌈${value}⌉ = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  const calculateRound = () => {
+    const value = Number.parseFloat(displayValue)
+    const result = Math.round(value)
+    setDisplayValue(result.toString())
+    setLastPressed("round")
+
+    // Add to history
+    const newHistory = [...history, `round(${value}) = ${result}`]
+    setHistory(newHistory)
+    saveHistoryToLocalStorage(newHistory)
+  }
+
+  // Simple numerical integration using the trapezoidal rule
+  const calculateIntegral = () => {
+    if (integrationMode) {
+      // User has entered the upper bound
+      const upperBound = Number.parseFloat(displayValue)
+      const lowerBound = storedValue || 0
+
+      // For demonstration, we'll integrate x^2 from lowerBound to upperBound
+      // Using the trapezoidal rule with 1000 intervals
+      const n = 1000
+      const h = (upperBound - lowerBound) / n
+      let sum = 0
+
+      // Function to integrate (x^2 for demonstration)
+      const f = (x: number) => x * x
+
+      for (let i = 0; i <= n; i++) {
+        const x = lowerBound + i * h
+        const factor = i === 0 || i === n ? 0.5 : 1
+        sum += factor * f(x)
+      }
+
+      const result = h * sum
+
+      // Add to history
+      const newHistory = [...history, `∫(x^2) from ${lowerBound} to ${upperBound} ≈ ${result}`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
+
+      setDisplayValue(result.toString())
+      setIntegrationMode(false)
+      setWaitingForOperand(true)
+      setLastPressed("∫")
+      setStoredValue(null)
+    } else {
+      // User is starting integration, store the lower bound
+      setStoredValue(Number.parseFloat(displayValue))
+      setDisplayValue("0")
+      setWaitingForOperand(true)
+      setIntegrationMode(true)
+      setLastPressed("∫")
+    }
+  }
+
+  // Simple numerical differentiation using central difference
+  const calculateDerivative = () => {
+    if (derivativeMode) {
+      // User has entered the point at which to evaluate the derivative
+      const x = Number.parseFloat(displayValue)
+      const h = 0.0001 // Small step for numerical differentiation
+
+      // Function to differentiate (x^2 for demonstration)
+      const f = (x: number) => x * x
+
+      // Central difference formula
+      const derivative = (f(x + h) - f(x - h)) / (2 * h)
+
+      // Add to history
+      const newHistory = [...history, `d/dx(x^2) at x=${x} ≈ ${derivative}`]
+      setHistory(newHistory)
+      saveHistoryToLocalStorage(newHistory)
+
+      setDisplayValue(derivative.toString())
+      setDerivativeMode(false)
+      setWaitingForOperand(true)
+      setLastPressed("d/dx")
+    } else {
+      // User is starting differentiation
+      setDisplayValue("0")
+      setWaitingForOperand(true)
+      setDerivativeMode(true)
+      setLastPressed("d/dx")
+    }
   }
 
   const memoryAdd = () => {
@@ -390,6 +647,24 @@ export default function Calculator() {
     saveHistoryToLocalStorage([])
   }
 
+  const exportHistory = () => {
+    try {
+      const historyText = history.join("\n")
+      const blob = new Blob([historyText], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "calculator_history.txt"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Error exporting history:", error)
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -411,18 +686,34 @@ export default function Calculator() {
         >
           {/* Header */}
           <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowHistory(!showHistory)}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <History size={20} />
-            </motion.button>
-            <h1 className="text-lg font-medium">Calculator</h1>
+            <div className="flex space-x-2">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowHistory(!showHistory)}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                aria-label="Toggle history"
+              >
+                <History size={20} />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={toggleKeypad}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                aria-label="Toggle keypad"
+              >
+                {activeKeypad === "main" ? <Function size={20} /> : <CalculatorIcon size={20} />}
+              </motion.button>
+            </div>
+            <h1 className="text-lg font-medium">
+              {activeKeypad === "main" ? "Calculator" : "Advanced"}
+              {integrationMode && " (Integration)"}
+              {derivativeMode && " (Derivative)"}
+            </h1>
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={toggleDarkMode}
               className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              aria-label="Toggle dark mode"
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </motion.button>
@@ -431,7 +722,8 @@ export default function Calculator() {
           {/* Display */}
           <div className="p-4 text-right">
             <div className="text-gray-500 dark:text-gray-400 text-sm h-6">
-              {storedValue !== null && `${storedValue} ${operation}`}
+              {storedValue !== null &&
+                `${storedValue} ${operation || (integrationMode ? "∫ to" : derivativeMode ? "d/dx at" : "")}`}
             </div>
             <motion.div
               key={displayValue}
@@ -455,9 +747,20 @@ export default function Calculator() {
                 <div className="p-4 max-h-60 overflow-y-auto">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-medium">History</h3>
-                    <button onClick={clearHistory} className="text-sm text-blue-500 dark:text-blue-400 hover:underline">
-                      Clear
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={exportHistory}
+                        className="text-sm text-blue-500 dark:text-blue-400 hover:underline"
+                      >
+                        Export
+                      </button>
+                      <button
+                        onClick={clearHistory}
+                        className="text-sm text-blue-500 dark:text-blue-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
                   {history.length === 0 ? (
                     <p className="text-gray-500 dark:text-gray-400 text-sm">No history yet</p>
@@ -484,95 +787,220 @@ export default function Calculator() {
           {/* Memory Display */}
           <div className="px-4 py-2 flex justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
             <span>Memory: {memory}</span>
-            <span>{operation && `Operation: ${operation}`}</span>
+            <span>
+              {integrationMode && "Integration Mode"}
+              {derivativeMode && "Derivative Mode"}
+              {operation && !integrationMode && !derivativeMode && `Operation: ${operation}`}
+            </span>
           </div>
 
           {/* Keypad */}
-          <div className="grid grid-cols-4 gap-1 p-2">
-            {/* Memory Row */}
-            <CalcButton onClick={memoryClear} label="MC" type="memory" lastPressed={lastPressed} />
-            <CalcButton onClick={memoryRecall} label="MR" type="memory" lastPressed={lastPressed} />
-            <CalcButton onClick={memoryAdd} label="M+" type="memory" lastPressed={lastPressed} />
-            <CalcButton onClick={memorySubtract} label="M-" type="memory" lastPressed={lastPressed} />
+          <AnimatePresence mode="wait">
+            {activeKeypad === "main" ? (
+              <motion.div
+                key="main-keypad"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="grid grid-cols-4 gap-1 p-2"
+              >
+                {/* Memory Row */}
+                <CalcButton onClick={memoryClear} label="MC" type="memory" lastPressed={lastPressed} />
+                <CalcButton onClick={memoryRecall} label="MR" type="memory" lastPressed={lastPressed} />
+                <CalcButton onClick={memoryAdd} label="M+" type="memory" lastPressed={lastPressed} />
+                <CalcButton onClick={memorySubtract} label="M-" type="memory" lastPressed={lastPressed} />
 
-            {/* Scientific Row */}
-            <CalcButton onClick={calculateSin} label="sin" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={calculateCos} label="cos" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={calculateTan} label="tan" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={() => performOperation("x^y")} label="x^y" type="function" lastPressed={lastPressed} />
+                {/* Scientific Row */}
+                <CalcButton onClick={calculateSin} label="sin" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateCos} label="cos" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateTan} label="tan" type="function" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("x^y")}
+                  label="x^y"
+                  type="function"
+                  lastPressed={lastPressed}
+                />
 
-            {/* More Scientific */}
-            <CalcButton onClick={calculateLog} label="log" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={calculateLn} label="ln" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={calculateSquareRoot} label="√" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={calculateFactorial} label="x!" type="function" lastPressed={lastPressed} />
+                {/* More Scientific */}
+                <CalcButton onClick={calculateLog} label="log" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateLn} label="ln" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateSquareRoot} label="√" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateFactorial} label="x!" type="function" lastPressed={lastPressed} />
 
-            {/* First Row */}
-            <CalcButton onClick={clearAll} label="C" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={toggleSign} label="±" type="function" lastPressed={lastPressed} />
-            <CalcButton
-              onClick={inputPercent}
-              label="%"
-              type="function"
-              lastPressed={lastPressed}
-              icon={<Percent size={18} />}
-            />
-            <CalcButton
-              onClick={() => performOperation("/")}
-              label="÷"
-              type="operation"
-              lastPressed={lastPressed}
-              icon={<Divide size={18} />}
-            />
+                {/* First Row */}
+                <CalcButton onClick={clearAll} label="C" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={toggleSign} label="±" type="function" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={inputPercent}
+                  label="%"
+                  type="function"
+                  lastPressed={lastPressed}
+                  icon={<Percent size={18} />}
+                />
+                <CalcButton
+                  onClick={() => performOperation("/")}
+                  label="÷"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<Divide size={18} />}
+                />
 
-            {/* Second Row */}
-            <CalcButton onClick={() => inputDigit(7)} label="7" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(8)} label="8" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(9)} label="9" type="digit" lastPressed={lastPressed} />
-            <CalcButton
-              onClick={() => performOperation("*")}
-              label="×"
-              type="operation"
-              lastPressed={lastPressed}
-              icon={<X size={18} />}
-            />
+                {/* Second Row */}
+                <CalcButton onClick={() => inputDigit(7)} label="7" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(8)} label="8" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(9)} label="9" type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("*")}
+                  label="×"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<X size={18} />}
+                />
 
-            {/* Third Row */}
-            <CalcButton onClick={() => inputDigit(4)} label="4" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(5)} label="5" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(6)} label="6" type="digit" lastPressed={lastPressed} />
-            <CalcButton
-              onClick={() => performOperation("-")}
-              label="-"
-              type="operation"
-              lastPressed={lastPressed}
-              icon={<Minus size={18} />}
-            />
+                {/* Third Row */}
+                <CalcButton onClick={() => inputDigit(4)} label="4" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(5)} label="5" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(6)} label="6" type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("-")}
+                  label="-"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<Minus size={18} />}
+                />
 
-            {/* Fourth Row */}
-            <CalcButton onClick={() => inputDigit(1)} label="1" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(2)} label="2" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(3)} label="3" type="digit" lastPressed={lastPressed} />
-            <CalcButton
-              onClick={() => performOperation("+")}
-              label="+"
-              type="operation"
-              lastPressed={lastPressed}
-              icon={<Plus size={18} />}
-            />
+                {/* Fourth Row */}
+                <CalcButton onClick={() => inputDigit(1)} label="1" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(2)} label="2" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(3)} label="3" type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("+")}
+                  label="+"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<Plus size={18} />}
+                />
 
-            {/* Fifth Row */}
-            <CalcButton onClick={calculateSquare} label="x²" type="function" lastPressed={lastPressed} />
-            <CalcButton onClick={() => inputDigit(0)} label="0" type="digit" lastPressed={lastPressed} />
-            <CalcButton onClick={inputDot} label="." type="digit" lastPressed={lastPressed} />
-            <CalcButton
-              onClick={performEquals}
-              label="="
-              type="equals"
-              lastPressed={lastPressed}
-              icon={<Equal size={18} />}
-            />
-          </div>
+                {/* Fifth Row */}
+                <CalcButton onClick={calculateSquare} label="x²" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(0)} label="0" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={inputDot} label="." type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={performEquals}
+                  label="="
+                  type="equals"
+                  lastPressed={lastPressed}
+                  icon={<Equal size={18} />}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="advanced-keypad"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="grid grid-cols-4 gap-1 p-2"
+              >
+                {/* Back Button */}
+                <CalcButton
+                  onClick={toggleKeypad}
+                  label="Back"
+                  type="function"
+                  lastPressed={lastPressed}
+                  icon={<ArrowLeft size={18} />}
+                />
+                <CalcButton onClick={calculatePi} label="π" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateE} label="e" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateExp} label="e^x" type="function" lastPressed={lastPressed} />
+
+                {/* Inverse Trig */}
+                <CalcButton onClick={calculateAsin} label="asin" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateAcos} label="acos" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateAtan} label="atan" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateAbs} label="|x|" type="function" lastPressed={lastPressed} />
+
+                {/* Calculus */}
+                <CalcButton
+                  onClick={calculateIntegral}
+                  label="∫"
+                  type="function"
+                  lastPressed={lastPressed}
+                  icon={<Sigma size={18} />}
+                />
+                <CalcButton onClick={calculateDerivative} label="d/dx" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateCube} label="x³" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateCubeRoot} label="∛" type="function" lastPressed={lastPressed} />
+
+                {/* Rounding */}
+                <CalcButton onClick={calculateFloor} label="⌊x⌋" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateCeil} label="⌈x⌉" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateRound} label="round" type="function" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("mod")}
+                  label="mod"
+                  type="operation"
+                  lastPressed={lastPressed}
+                />
+
+                {/* Constants and Special Functions */}
+                <CalcButton onClick={clearAll} label="C" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={toggleSign} label="±" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateReciprocal} label="1/x" type="function" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("/")}
+                  label="÷"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<Divide size={18} />}
+                />
+
+                {/* Number Pad */}
+                <CalcButton onClick={() => inputDigit(7)} label="7" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(8)} label="8" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(9)} label="9" type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("*")}
+                  label="×"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<X size={18} />}
+                />
+
+                <CalcButton onClick={() => inputDigit(4)} label="4" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(5)} label="5" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(6)} label="6" type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("-")}
+                  label="-"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<Minus size={18} />}
+                />
+
+                <CalcButton onClick={() => inputDigit(1)} label="1" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(2)} label="2" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(3)} label="3" type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("+")}
+                  label="+"
+                  type="operation"
+                  lastPressed={lastPressed}
+                  icon={<Plus size={18} />}
+                />
+
+                <CalcButton onClick={clearLastChar} label="⌫" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={() => inputDigit(0)} label="0" type="digit" lastPressed={lastPressed} />
+                <CalcButton onClick={inputDot} label="." type="digit" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={performEquals}
+                  label="="
+                  type="equals"
+                  lastPressed={lastPressed}
+                  icon={<Equal size={18} />}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
     </div>
@@ -616,6 +1044,7 @@ const CalcButton: React.FC<CalcButtonProps> = ({ onClick, label, type, lastPress
         isActive && "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800",
       )}
       onClick={onClick}
+      aria-label={label}
     >
       {icon || label}
     </motion.button>
