@@ -15,7 +15,6 @@ import {
   Plus,
   Equal,
   ArrowLeft,
-  Sigma,
   ActivityIcon as Function,
   CalculatorIcon,
 } from "lucide-react"
@@ -539,81 +538,6 @@ export default function Calculator() {
     saveHistoryToLocalStorage(newHistory)
   }
 
-  // Simple numerical integration using the trapezoidal rule
-  const calculateIntegral = () => {
-    if (integrationMode) {
-      // User has entered the upper bound
-      const upperBound = Number.parseFloat(displayValue)
-      const lowerBound = storedValue || 0
-
-      // For demonstration, we'll integrate x^2 from lowerBound to upperBound
-      // Using the trapezoidal rule with 1000 intervals
-      const n = 1000
-      const h = (upperBound - lowerBound) / n
-      let sum = 0
-
-      // Function to integrate (x^2 for demonstration)
-      const f = (x: number) => x * x
-
-      for (let i = 0; i <= n; i++) {
-        const x = lowerBound + i * h
-        const factor = i === 0 || i === n ? 0.5 : 1
-        sum += factor * f(x)
-      }
-
-      const result = h * sum
-
-      // Add to history
-      const newHistory = [...history, `∫(x^2) from ${lowerBound} to ${upperBound} ≈ ${result}`]
-      setHistory(newHistory)
-      saveHistoryToLocalStorage(newHistory)
-
-      setDisplayValue(result.toString())
-      setIntegrationMode(false)
-      setWaitingForOperand(true)
-      setLastPressed("∫")
-      setStoredValue(null)
-    } else {
-      // User is starting integration, store the lower bound
-      setStoredValue(Number.parseFloat(displayValue))
-      setDisplayValue("0")
-      setWaitingForOperand(true)
-      setIntegrationMode(true)
-      setLastPressed("∫")
-    }
-  }
-
-  // Simple numerical differentiation using central difference
-  const calculateDerivative = () => {
-    if (derivativeMode) {
-      // User has entered the point at which to evaluate the derivative
-      const x = Number.parseFloat(displayValue)
-      const h = 0.0001 // Small step for numerical differentiation
-
-      // Function to differentiate (x^2 for demonstration)
-      const f = (x: number) => x * x
-
-      // Central difference formula
-      const derivative = (f(x + h) - f(x - h)) / (2 * h)
-
-      // Add to history
-      const newHistory = [...history, `d/dx(x^2) at x=${x} ≈ ${derivative}`]
-      setHistory(newHistory)
-      saveHistoryToLocalStorage(newHistory)
-
-      setDisplayValue(derivative.toString())
-      setDerivativeMode(false)
-      setWaitingForOperand(true)
-      setLastPressed("d/dx")
-    } else {
-      // User is starting differentiation
-      setDisplayValue("0")
-      setWaitingForOperand(true)
-      setDerivativeMode(true)
-      setLastPressed("d/dx")
-    }
-  }
-
   const memoryAdd = () => {
     const newMemory = memory + Number.parseFloat(displayValue)
     setMemory(newMemory)
@@ -804,22 +728,23 @@ export default function Calculator() {
                 exit={{ opacity: 0, x: 20 }}
                 className="grid grid-cols-4 gap-1 p-2"
               >
-                {/* Memory Row */}
+                {/* First Row with Back Button */}
+                <CalcButton
+                  onClick={toggleKeypad}
+                  label="Back"
+                  type="function"
+                  lastPressed={lastPressed}
+                  icon={<ArrowLeft size={18} />}
+                />
                 <CalcButton onClick={memoryClear} label="MC" type="memory" lastPressed={lastPressed} />
                 <CalcButton onClick={memoryRecall} label="MR" type="memory" lastPressed={lastPressed} />
                 <CalcButton onClick={memoryAdd} label="M+" type="memory" lastPressed={lastPressed} />
-                <CalcButton onClick={memorySubtract} label="M-" type="memory" lastPressed={lastPressed} />
 
-                {/* Scientific Row */}
+                {/* Second Row - Memory Subtract + Scientific */}
+                <CalcButton onClick={memorySubtract} label="M-" type="memory" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateSin} label="sin" type="function" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateCos} label="cos" type="function" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateTan} label="tan" type="function" lastPressed={lastPressed} />
-                <CalcButton
-                  onClick={() => performOperation("x^y")}
-                  label="x^y"
-                  type="function"
-                  lastPressed={lastPressed}
-                />
 
                 {/* More Scientific */}
                 <CalcButton onClick={calculateLog} label="log" type="function" lastPressed={lastPressed} />
@@ -919,26 +844,25 @@ export default function Calculator() {
                 <CalcButton onClick={calculateAtan} label="atan" type="function" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateAbs} label="|x|" type="function" lastPressed={lastPressed} />
 
-                {/* Calculus */}
-                <CalcButton
-                  onClick={calculateIntegral}
-                  label="∫"
-                  type="function"
-                  lastPressed={lastPressed}
-                  icon={<Sigma size={18} />}
-                />
-                <CalcButton onClick={calculateDerivative} label="d/dx" type="function" lastPressed={lastPressed} />
+                {/* Remove the Calculus row and replace with more scientific functions */}
                 <CalcButton onClick={calculateCube} label="x³" type="function" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateCubeRoot} label="∛" type="function" lastPressed={lastPressed} />
+                <CalcButton onClick={calculateReciprocal} label="1/x" type="function" lastPressed={lastPressed} />
+                <CalcButton
+                  onClick={() => performOperation("mod")}
+                  label="mod"
+                  type="operation"
+                  lastPressed={lastPressed}
+                />
 
                 {/* Rounding */}
                 <CalcButton onClick={calculateFloor} label="⌊x⌋" type="function" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateCeil} label="⌈x⌉" type="function" lastPressed={lastPressed} />
                 <CalcButton onClick={calculateRound} label="round" type="function" lastPressed={lastPressed} />
                 <CalcButton
-                  onClick={() => performOperation("mod")}
-                  label="mod"
-                  type="operation"
+                  onClick={() => performOperation("x^y")}
+                  label="x^y"
+                  type="function"
                   lastPressed={lastPressed}
                 />
 
