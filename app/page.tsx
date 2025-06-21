@@ -1,7 +1,7 @@
 import Calculator from "../calculator"
 
 export const metadata: Metadata = {
-  title: "Calci",
+  title: "calculator",
   description: "A modern, animated calculator web application",
 }
 
